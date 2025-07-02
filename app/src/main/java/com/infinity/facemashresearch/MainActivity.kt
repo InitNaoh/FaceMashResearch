@@ -148,6 +148,9 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
     override fun onEmpty() {
         // Không tìm thấy khuôn mặt
+        runOnUiThread {
+            cameraGLView.clearTextures()
+        }
     }
 
     private fun handleRegion(name: String, indices: List<Int>, landmarkList: List<NormalizedLandmark>, bitmap: Bitmap) {

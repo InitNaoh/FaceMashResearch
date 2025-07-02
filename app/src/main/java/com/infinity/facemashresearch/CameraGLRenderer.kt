@@ -7,6 +7,7 @@ import android.opengl.GLSurfaceView
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import java.nio.FloatBuffer
+import kotlin.text.clear
 
 class CameraGLRenderer : GLSurfaceView.Renderer {
 
@@ -91,5 +92,14 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
 //        mouthTextureId = GLUtils.loadTexture(bitmap)
 //        mouthBox = box
 //        hasFaceTexture = true
+    }
+
+    fun clearTextures() {
+        for (texId in textureIds.values) {
+            GLES20.glDeleteTextures(1, intArrayOf(texId), 0)
+        }
+        textureIds.clear()
+        textureBoxes.clear()
+        hasAnyFaceTexture = false
     }
 }
