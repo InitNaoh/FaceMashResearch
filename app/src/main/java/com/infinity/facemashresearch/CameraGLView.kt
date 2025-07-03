@@ -49,13 +49,14 @@ class CameraGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
 
     fun startEyebrowFall() {
         queueEvent {
-            renderer.startEyebrowFall()
+            renderer.resetAllRegions()
+            renderer.startRegionFall()
         }
     }
 
     fun stopEyebrowFall() {
         queueEvent {
-            renderer.stopEyebrowFall()
+            renderer.stopCurrentRegionFall()
         }
     }
 }

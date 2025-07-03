@@ -30,7 +30,7 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
     private var hasAnyFaceTexture = false
 
     // Game One Index
-    private var isStartGameOne = false
+    private var isPlayGameOne = false
     private var fallingRegionTexId: Int = -1
     private var fallingRegionUVBox: FloatArray? = null
     private var fallingStartTime: Long = -1L
@@ -40,6 +40,22 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
     private var fallingOffsetXs: FloatArray = FloatArray(repeatCount) {
         Random.nextFloat() * 1.2f - 0.2f  // kết quả nằm trong [-0.8, 0.8]
     }
+
+    // Game Two Index
+    private var isPlayGameTwo = false
+    private val regionsToFall = listOf(
+        "EYE_BROW_LEFT",
+        "EYE_BROW_RIGHT",
+        "EYE_LEFT",
+        "EYE_RIGHT",
+        "NOSE",
+        "MOUTH_OUTSIDE"
+    )
+    private var currentRegionIndex = 0
+    private var isRegionFalling = false
+    private var regionOffsetYMap = mutableMapOf<String, Float>()
+    private var regionStoppedMap = mutableMapOf<String, Boolean>()
+    private var regionVisibleMap = mutableMapOf<String, Boolean>()
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         oesTextureId = GLUtils.createOESTexture()
@@ -52,6 +68,12 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
+
+        for (region in regionsToFall) {
+            regionOffsetYMap[region] = 2f
+            regionStoppedMap[region] = false
+            regionVisibleMap[region] = true
+        }
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -69,40 +91,33 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
             }
         }
 
-        if (hasAnyFaceTexture) {
-//            for ((region, texId) in textureIds) {
-//                val box = textureBoxes[region]
-//                if (box != null && texId > 0) {
-//                    GLUtils.drawMouthTexture(texId, box)
-//                }
-//            }
+        if (hasAnyFaceTexture && isPlayGameTwo) {
             for ((region, texId) in textureIds) {
                 val box = textureBoxes[region]
-
-                if (region == "EYE_BROW_LEFT" && box != null && texId > 0) {
+                if (box != null && texId > 0 && regionVisibleMap[region] == true) {
                     val uv = box.copyOf()
+                    val offsetY = regionOffsetYMap[region] ?: 0f
                     for (i in 1 until uv.size step 2) {
-                        uv[i] += browOffsetY
+                        uv[i] += offsetY
                     }
-                    GLUtils.drawMouthTexture(texId, uv, scaleFactor = 1.0f)
+                    GLUtils.drawMouthTexture(texId, uv, scaleFactor = 0.8f)
 
-                    // Nếu đang rơi và chưa dừng thì giảm offset
-                    if (isFallingBrow && !isBrowStopped) {
-                        browOffsetY -= 0.01f
-                        if (browOffsetY < -2f) {
-                            browVisible = false
+                    if (region == regionsToFall.getOrNull(currentRegionIndex)) {
+                        if (isRegionFalling && regionStoppedMap[region] == false) {
+                            regionOffsetYMap[region] = offsetY - 0.01f
+                            if (offsetY < -2f) {
+                                regionVisibleMap[region] = false
+                                isRegionFalling = false
+                                currentRegionIndex++
+                                startRegionFall()
+                            }
                         }
                     }
                 }
             }
-
         }
 
-        if (isStartGameOne) gameLipOne()
-    }
-
-    fun setRegionOffsetY(region: String, offset: Float) {
-        regionOffsetY[region] = offset
+        if (isPlayGameOne) gameLipOne()
     }
 
     fun gameLipOne() {
@@ -184,7 +199,8 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         fallingStartTime = System.currentTimeMillis()
         fallingDurationPerFall = level
         fallingRepeatCount = 0
-        isStartGameOne = true
+        isPlayGameOne = true
+        isPlayGameTwo = false
     }
 
     fun updateLandmarks(points: List<Pair<Float, Float>>) {
@@ -225,24 +241,33 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         hasAnyFaceTexture = false
     }
 
-    private val regionOffsetY = mutableMapOf<String, Float>(
-        "EYE_BROW_LEFT" to 0f
-    )
 
-    private var isFallingBrow = false
-    private var browOffsetY = 2.0f // Bắt đầu từ trên top (giá trị lớn hơn 1)
-    private var isBrowStopped = false
-    private var browVisible = true
-
-    fun startEyebrowFall() {
-        isFallingBrow = true
-        browOffsetY = 2.0f
-        isBrowStopped = false
-        browVisible = true
+    fun startRegionFall() {
+        val region = regionsToFall.getOrNull(currentRegionIndex) ?: return
+        isRegionFalling = true
+        regionStoppedMap[region] = false
+        regionVisibleMap[region] = true
+        regionOffsetYMap[region] = 2.0f
+        isPlayGameTwo = true
+        isPlayGameOne = false
     }
 
-    fun stopEyebrowFall() {
-        isBrowStopped = true
+    fun stopCurrentRegionFall() {
+        val region = regionsToFall.getOrNull(currentRegionIndex) ?: return
+        regionStoppedMap[region] = true
+        isRegionFalling = false
+        currentRegionIndex++
+        startRegionFall()
+    }
+
+    fun resetAllRegions() {
+        currentRegionIndex = 0
+        isRegionFalling = false
+        for (region in regionsToFall) {
+            regionOffsetYMap[region] = 2.0f
+            regionStoppedMap[region] = false
+            regionVisibleMap[region] = true
+        }
     }
 
 }
