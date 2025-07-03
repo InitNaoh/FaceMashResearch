@@ -68,6 +68,10 @@ object GLUtils {
         432, 436, 391, 393, 164, 167, 165, 216, 212
     )
 
+    val EYE_BROW_LEFT = listOf(70, 225, 224, 223, 222, 221, 55, 107, 66, 105, 63, 70)
+
+    val EYE_BROW_RIGHT = listOf(336, 296, 334, 293, 300, 276, 445, 444, 443, 442, 441, 285, 336)
+
     val EYE_LEFT = listOf(113, 30, 29, 27, 28, 56, 190, 243, 232, 231, 230, 229, 228, 31, 35, 113)
 
     val EYE_RIGHT = listOf(342, 260, 259, 257, 258, 286, 414, 463, 453, 452, 451, 450, 449, 448, 261, 265, 342)
@@ -75,6 +79,7 @@ object GLUtils {
     val NOSE = listOf(168, 122, 217, 126, 203, 167, 164, 393, 423, 355, 437, 351, 168)
 
     var surfaceTexture: SurfaceTexture? = null
+
     var isFrontCamera = true
 
     // Shaders
@@ -438,8 +443,6 @@ object GLUtils {
 
         return result
     }
-
-
 
 
 

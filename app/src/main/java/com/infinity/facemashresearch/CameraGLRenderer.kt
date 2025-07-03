@@ -30,6 +30,7 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
     private var hasAnyFaceTexture = false
 
     // Game One Index
+    private var isStartGameOne = false
     private var fallingRegionTexId: Int = -1
     private var fallingRegionUVBox: FloatArray? = null
     private var fallingStartTime: Long = -1L
@@ -77,7 +78,7 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
 //            }
         }
 
-        gameLipOne()
+        if (isStartGameOne) gameLipOne()
     }
 
     fun gameLipOne() {
@@ -159,6 +160,7 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         fallingStartTime = System.currentTimeMillis()
         fallingDurationPerFall = level
         fallingRepeatCount = 0
+        isStartGameOne = true
     }
 
     fun updateLandmarks(points: List<Pair<Float, Float>>) {

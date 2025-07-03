@@ -44,6 +44,8 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
     private lateinit var btnStart: Button
 
+    private lateinit var btnStart2: Button
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -73,6 +75,11 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
                     cameraGLView.startGameOne(bmp, box, 4f)
                 }
             }
+        }
+
+        btnStart2 = findViewById<Button>(R.id.btnStart2)
+        btnStart2.setOnClickListener {
+
         }
     }
 
@@ -160,10 +167,12 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         val landmarkList = resultBundle.result.faceLandmarks()[0]
 
         handleRegion("MOUTH", GLUtils.MOUTH, landmarkList, bitmap)
-//        handleRegion("MOUTH_OUTSIDE", GLUtils.MOUTH_OUTSIDE, landmarkList, bitmap)
-//        handleRegion("EYE_LEFT", GLUtils.EYE_LEFT, landmarkList, bitmap)
-//        handleRegion("EYE_RIGHT", GLUtils.EYE_RIGHT, landmarkList, bitmap)
-//        handleRegion("NOSE", GLUtils.NOSE, landmarkList, bitmap)
+        handleRegion("MOUTH_OUTSIDE", GLUtils.MOUTH_OUTSIDE, landmarkList, bitmap)
+        handleRegion("EYE_LEFT", GLUtils.EYE_LEFT, landmarkList, bitmap)
+        handleRegion("EYE_RIGHT", GLUtils.EYE_RIGHT, landmarkList, bitmap)
+        handleRegion("NOSE", GLUtils.NOSE, landmarkList, bitmap)
+        handleRegion("EYE_BROW_LEFT", GLUtils.EYE_BROW_LEFT, landmarkList, bitmap)
+        handleRegion("EYE_BROW_RIGHT", GLUtils.EYE_BROW_RIGHT, landmarkList, bitmap)
     }
 
     override fun onEmpty() {
@@ -225,12 +234,13 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
             1 - bounds.bottom / bitmap.height * 2
         )
 
+        cameraGLView.updateRegionTexture(name, result, uvBox)
+
         if (name == "MOUTH") {
             mouthBitmap = result
             mouthUVBox = uvBox
         }
 
-        cameraGLView.updateRegionTexture(name, result, uvBox)
     }
 
 }
