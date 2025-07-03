@@ -76,9 +76,33 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
 //                    GLUtils.drawMouthTexture(texId, box)
 //                }
 //            }
+            for ((region, texId) in textureIds) {
+                val box = textureBoxes[region]
+
+                if (region == "EYE_BROW_LEFT" && box != null && texId > 0) {
+                    val uv = box.copyOf()
+                    for (i in 1 until uv.size step 2) {
+                        uv[i] += browOffsetY
+                    }
+                    GLUtils.drawMouthTexture(texId, uv, scaleFactor = 1.0f)
+
+                    // Nếu đang rơi và chưa dừng thì giảm offset
+                    if (isFallingBrow && !isBrowStopped) {
+                        browOffsetY -= 0.01f
+                        if (browOffsetY < -2f) {
+                            browVisible = false
+                        }
+                    }
+                }
+            }
+
         }
 
         if (isStartGameOne) gameLipOne()
+    }
+
+    fun setRegionOffsetY(region: String, offset: Float) {
+        regionOffsetY[region] = offset
     }
 
     fun gameLipOne() {
@@ -200,4 +224,25 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         textureBoxes.clear()
         hasAnyFaceTexture = false
     }
+
+    private val regionOffsetY = mutableMapOf<String, Float>(
+        "EYE_BROW_LEFT" to 0f
+    )
+
+    private var isFallingBrow = false
+    private var browOffsetY = 2.0f // Bắt đầu từ trên top (giá trị lớn hơn 1)
+    private var isBrowStopped = false
+    private var browVisible = true
+
+    fun startEyebrowFall() {
+        isFallingBrow = true
+        browOffsetY = 2.0f
+        isBrowStopped = false
+        browVisible = true
+    }
+
+    fun stopEyebrowFall() {
+        isBrowStopped = true
+    }
+
 }

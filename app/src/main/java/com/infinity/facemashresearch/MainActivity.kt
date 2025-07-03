@@ -79,7 +79,11 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
         btnStart2 = findViewById<Button>(R.id.btnStart2)
         btnStart2.setOnClickListener {
+            cameraGLView.startEyebrowFall()
+        }
 
+        cameraGLView.setOnClickListener {
+            cameraGLView.stopEyebrowFall()
         }
     }
 

@@ -1,5 +1,7 @@
 package com.infinity.facemashresearch
 
+import android.R.attr.bitmap
+import android.R.attr.level
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
@@ -45,4 +47,15 @@ class CameraGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         }
     }
 
+    fun startEyebrowFall() {
+        queueEvent {
+            renderer.startEyebrowFall()
+        }
+    }
+
+    fun stopEyebrowFall() {
+        queueEvent {
+            renderer.stopEyebrowFall()
+        }
+    }
 }
