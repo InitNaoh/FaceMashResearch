@@ -3,9 +3,7 @@ package com.infinity.facemashresearch
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
-import android.opengl.GLES20
 import android.opengl.GLSurfaceView
-import android.opengl.GLSurfaceView.RENDERMODE_CONTINUOUSLY
 import android.util.AttributeSet
 
 class CameraGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceView(context, attrs) {
@@ -39,4 +37,12 @@ class CameraGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
             renderer.clearTextures()
         }
     }
+
+    fun startGameOne(bitmap: Bitmap, uvBox: FloatArray, level: Float) {
+        queueEvent {
+            val texId = GLUtils.loadTexture(bitmap)
+            renderer.startGameOneRender(texId, uvBox, level)
+        }
+    }
+
 }

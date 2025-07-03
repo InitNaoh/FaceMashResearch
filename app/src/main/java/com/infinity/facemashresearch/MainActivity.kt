@@ -15,6 +15,7 @@ import android.os.Bundle
 import android.util.Log
 import android.util.Size
 import android.view.Surface
+import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -25,7 +26,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.mediapipe.tasks.vision.core.RunningMode
-import com.infinity.facemashresearch.GLUtils.applyRadialFade
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import androidx.core.graphics.createBitmap
@@ -37,6 +37,12 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
     private lateinit var faceLandmarkerHelper: FaceLandmarkerHelper
     private lateinit var backgroundExecutor: ExecutorService
     private var imageAnalyzer: ImageAnalysis? = null
+
+    private var mouthBitmap: Bitmap? = null
+
+    private var mouthUVBox: FloatArray? = null
+
+    private lateinit var btnStart: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +63,16 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
                 currentDelegate = FaceLandmarkerHelper.DELEGATE_CPU,
                 faceLandmarkerHelperListener = this
             )
+        }
+
+        btnStart = findViewById<Button>(R.id.btnStart)
+        btnStart.setOnClickListener {
+            mouthBitmap?.let { bmp ->
+                mouthUVBox?.let { box ->
+                    Log.d("naoh_debug", "onCreate: btnStart click")
+                    cameraGLView.startGameOne(bmp, box, 4f)
+                }
+            }
         }
     }
 
@@ -131,6 +147,9 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         Log.e("FaceLandmarker", error)
     }
 
+    // Thêm biến lưu vùng MOUTH
+
+
     override fun onResults(resultBundle: FaceLandmarkerHelper.ResultBundle) {
         val landmarks = resultBundle.result.faceLandmarks()[0].map {
             Pair(it.x() * 2 - 1, 1 - it.y() * 2)
@@ -140,10 +159,11 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         val bitmap = resultBundle.inputBitmap ?: return
         val landmarkList = resultBundle.result.faceLandmarks()[0]
 
-        handleRegion("MOUTH", GLUtils.MOUTH_OUTSIDE, landmarkList, bitmap)
-        handleRegion("EYE_LEFT", GLUtils.EYE_LEFT, landmarkList, bitmap)
-        handleRegion("EYE_RIGHT", GLUtils.EYE_RIGHT, landmarkList, bitmap)
-        handleRegion("NOSE", GLUtils.NOSE, landmarkList, bitmap)
+        handleRegion("MOUTH", GLUtils.MOUTH, landmarkList, bitmap)
+//        handleRegion("MOUTH_OUTSIDE", GLUtils.MOUTH_OUTSIDE, landmarkList, bitmap)
+//        handleRegion("EYE_LEFT", GLUtils.EYE_LEFT, landmarkList, bitmap)
+//        handleRegion("EYE_RIGHT", GLUtils.EYE_RIGHT, landmarkList, bitmap)
+//        handleRegion("NOSE", GLUtils.NOSE, landmarkList, bitmap)
     }
 
     override fun onEmpty() {
@@ -204,6 +224,11 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
             bounds.left / bitmap.width * 2 - 1,
             1 - bounds.bottom / bitmap.height * 2
         )
+
+        if (name == "MOUTH") {
+            mouthBitmap = result
+            mouthUVBox = uvBox
+        }
 
         cameraGLView.updateRegionTexture(name, result, uvBox)
     }
