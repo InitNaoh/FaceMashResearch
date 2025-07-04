@@ -78,6 +78,41 @@ object GLUtils {
 
     val NOSE = listOf(168, 122, 217, 126, 203, 167, 164, 393, 423, 355, 437, 351, 168)
 
+    val FULL_FACE = listOf(
+        151,
+        337,
+        299,
+        333,
+        298,
+        301,
+        368,
+        372,
+        345,
+        352,
+        411,
+        434,
+        430,
+        431,
+        262,
+        428,
+        199,
+        208,
+        32,
+        211,
+        210,
+        214,
+        187,
+        123,
+        143,
+        139,
+        71,
+        68,
+        104,
+        69,
+        108,
+        151
+    )
+
     var surfaceTexture: SurfaceTexture? = null
 
     var isFrontCamera = true
@@ -467,6 +502,55 @@ object GLUtils {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, points.size)
         GLES20.glDisable(GLES20.GL_BLEND)
         GLES20.glDisableVertexAttribArray(aPosLine)
+    }
+
+    fun drawFaceMaskTexture(texId: Int, box: FloatArray, scaleFactor: Float = 1.0f) {
+        if (texId <= 0 || box.size < 8) return
+
+        val centerX = (box[0] + box[4]) / 2f
+        val centerY = (box[1] + box[5]) / 2f
+
+        fun scale(x: Float, y: Float): Pair<Float, Float> {
+            val dx = x - centerX
+            val dy = y - centerY
+            return Pair(centerX + dx * scaleFactor, centerY + dy * scaleFactor)
+        }
+
+        val (x0, y0) = scale(box[0], box[1])
+        val (x1, y1) = scale(box[2], box[3])
+        val (x2, y2) = scale(box[4], box[5])
+        val (x3, y3) = scale(box[6], box[7])
+
+        val quad = floatArrayOf(
+            x0, y0, 0f, 0f,
+            x1, y1, 1f, 0f,
+            x3, y3, 0f, 1f,
+            x2, y2, 1f, 1f
+        )
+        val buffer = createFloatBuffer(quad)
+
+        GLES20.glUseProgram(textureProgram)
+
+        buffer.position(0)
+        GLES20.glEnableVertexAttribArray(aPosTex)
+        GLES20.glVertexAttribPointer(aPosTex, 2, GLES20.GL_FLOAT, false, 16, buffer)
+
+        buffer.position(2)
+        GLES20.glEnableVertexAttribArray(aTexTex)
+        GLES20.glVertexAttribPointer(aTexTex, 2, GLES20.GL_FLOAT, false, 16, buffer)
+
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texId)
+        GLES20.glUniform1i(uTexTex, 0)
+
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+
+        GLES20.glDisableVertexAttribArray(aPosTex)
+        GLES20.glDisableVertexAttribArray(aTexTex)
+        GLES20.glDisable(GLES20.GL_BLEND)
     }
 
 

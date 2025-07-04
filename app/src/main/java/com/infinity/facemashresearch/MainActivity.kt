@@ -189,6 +189,8 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         handleRegion("NOSE", GLUtils.NOSE, landmarkList, bitmap)
         handleRegion("EYE_BROW_LEFT", GLUtils.EYE_BROW_LEFT, landmarkList, bitmap)
         handleRegion("EYE_BROW_RIGHT", GLUtils.EYE_BROW_RIGHT, landmarkList, bitmap)
+
+        handleRegion("FULL_FACE", GLUtils.FULL_FACE, landmarkList, bitmap)
     }
 
     override fun onEmpty() {
@@ -250,13 +252,54 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
             1 - bounds.bottom / bitmap.height * 2
         )
 
-        cameraGLView.updateRegionTexture(name, result, uvBox)
-
         if (name == "MOUTH") {
             mouthBitmap = result
             mouthUVBox = uvBox
         }
 
+        if (name == "FULL_FACE") {
+            val skinColor = Color.rgb(230, 200, 170)
+            val shouldUpdate = lastFullFaceUVBox == null ||
+                    lastFullFaceUVBox!!.zip(uvBox).any { (a, b) -> kotlin.math.abs(a - b) > 0.01f }
+            if (shouldUpdate) {
+                lastFullFaceUVBox = uvBox
+                val maskBitmap = createSkinMask(bounds, path, skinColor)
+                lastFullFaceBitmap = maskBitmap
+                cameraGLView.updateRegionTexture("FULL_FACE", maskBitmap, uvBox)
+            } else {
+                lastFullFaceBitmap?.let { cached ->
+                    cameraGLView.updateRegionTexture("FULL_FACE", cached, uvBox)
+                }
+            }
+        } else {
+            cameraGLView.updateRegionTexture(name, result, uvBox)
+        }
+    }
+
+    private var lastFullFaceBitmap: Bitmap? = null
+    private var lastFullFaceUVBox: FloatArray? = null
+
+
+    fun createSkinMask(bounds: RectF, path: Path, color: Int): Bitmap {
+        val width = bounds.width().toInt().coerceAtLeast(1)
+        val height = bounds.height().toInt().coerceAtLeast(1)
+        val bitmap = createBitmap(width, height)
+        val canvas = Canvas(bitmap)
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            this.color = color
+            alpha = 255
+        }
+
+        // Offset path để vẽ đúng vị trí
+        val offsetPath = Path(path)
+        offsetPath.offset(-bounds.left, -bounds.top)
+
+        // Vẽ nền màu da
+        canvas.drawPath(offsetPath, paint)
+
+        return bitmap
     }
 
 }

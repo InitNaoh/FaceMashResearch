@@ -115,6 +115,11 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
             if (landmarks.isNotEmpty()) {
                 // GLUtils.drawLandmarks(landmarks)
                 // GLUtils.drawMouthFilled(landmarks)
+                textureIds["FULL_FACE"]?.let { texId ->
+                    textureBoxes["FULL_FACE"]?.let { box ->
+                        GLUtils.drawFaceMaskTexture(texId, box, 1.0f)
+                    }
+                }
             }
         }
 
@@ -123,6 +128,7 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         if (hasAnyFaceTexture && isPlayGameTwo) gameTwo()
 
         if (hasAnyFaceTexture && isPlayGameThree) gameThree()
+
     }
 
     private fun gameThree() {
