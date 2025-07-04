@@ -25,11 +25,11 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import androidx.core.graphics.createBitmap
-import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 
 class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListener {
     private lateinit var cameraGLView: CameraGLView
@@ -100,12 +100,17 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
     }
 
     private fun requestCameraPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                this, Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 101)
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, perms: Array<out String>, results: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int, perms: Array<out String>, results: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, perms, results)
         if (requestCode == 101 && results.firstOrNull() == PackageManager.PERMISSION_GRANTED) startCamera()
         else Toast.makeText(this, "Camera permission needed", Toast.LENGTH_LONG).show()
@@ -115,37 +120,37 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         val surfaceTexture = cameraGLView.surfaceTexture ?: return
         surfaceTexture.setDefaultBufferSize(cameraGLView.width, cameraGLView.height)
 
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider { request ->
-                val surface = Surface(surfaceTexture)
-                request.provideSurface(surface, cameraExecutor) { }
-            }
-        }
-
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
 
-            val preview = Preview.Builder()
-                .setTargetResolution(Size(cameraGLView.width, cameraGLView.height))
-                .build()
+            val preview =
+                Preview.Builder().setTargetResolution(Size(cameraGLView.width, cameraGLView.height))
+                    .build()
 
             imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888).build()
-                .also {
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888).build().also {
                     it.setAnalyzer(backgroundExecutor) { image ->
                         detectFace(image)
                     }
                 }
 
-            val surfaceTexture = cameraGLView.surfaceTexture ?: return@addListener
-            surfaceTexture.setDefaultBufferSize(cameraGLView.width, cameraGLView.height)
-            val surface = Surface(surfaceTexture)
 
+            val surface = Surface(surfaceTexture)
+            var width = 1920
+            var height = 1080
             preview.setSurfaceProvider { request ->
+                val resolution = request.resolution
+                width = resolution.width
+                height = resolution.height
+                Log.d("naoh_debug", "resolution: $width x $height")
                 request.provideSurface(surface, cameraExecutor) {}
             }
+
+            val surfaceTexture = cameraGLView.surfaceTexture ?: return@addListener
+            Log.d("naoh_debug", "setDefaultBufferSize: $width x $height")
+            surfaceTexture.setDefaultBufferSize(width, height)
 
             val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
             cameraProvider.unbindAll()
@@ -156,8 +161,7 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
     private fun detectFace(imageProxy: ImageProxy) {
         faceLandmarkerHelper.detectLiveStream(
-            imageProxy = imageProxy,
-            isFrontCamera = true
+            imageProxy = imageProxy, isFrontCamera = true
         )
     }
 
@@ -174,8 +178,26 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
 
     override fun onResults(resultBundle: FaceLandmarkerHelper.ResultBundle) {
+        val imageW = resultBundle.inputImageWidth
+        val imageH = resultBundle.inputImageHeight
+        val surfaceW = cameraGLView.width
+        val surfaceH = cameraGLView.height
+
+        val scale = surfaceH / imageH
+        val scaledImageW = imageW * scale
+        val dx = (scaledImageW - surfaceW) / 2f
+
         val landmarks = resultBundle.result.faceLandmarks()[0].map {
-            Pair(it.x() * 2 - 1, 1 - it.y() * 2)
+            val px = it.x() * imageW
+            val py = it.y() * imageH
+
+            val sx = px * scale - dx
+            val sy = py * scale
+
+            val ndcX = sx / surfaceW * 2f - 1f
+            val ndcY = 1f - sy / surfaceH * 2f
+
+            Pair(ndcX, ndcY)
         }
         cameraGLView.updateLandmarks(landmarks)
 
@@ -200,7 +222,9 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         }
     }
 
-    private fun handleRegion(name: String, indices: List<Int>, landmarkList: List<NormalizedLandmark>, bitmap: Bitmap) {
+    private fun handleRegion(
+        name: String, indices: List<Int>, landmarkList: List<NormalizedLandmark>, bitmap: Bitmap
+    ) {
         val path = Path()
         val points = indices.map {
             val x = landmarkList[it].x() * bitmap.width
@@ -233,23 +257,15 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
         paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
         canvas.drawBitmap(
-            bitmap,
-            Rect(bounds.left.toInt(), bounds.top.toInt(), bounds.right.toInt(), bounds.bottom.toInt()),
-            Rect(0, 0, croppedW, croppedH),
-            paint
+            bitmap, Rect(
+                bounds.left.toInt(), bounds.top.toInt(), bounds.right.toInt(), bounds.bottom.toInt()
+            ), Rect(0, 0, croppedW, croppedH), paint
         )
 
         val result = GLUtils.applyRadialFade(cropped)
 
-        val uvBox = floatArrayOf(
-            bounds.left / bitmap.width * 2 - 1,
-            1 - bounds.top / bitmap.height * 2,
-            bounds.right / bitmap.width * 2 - 1,
-            1 - bounds.top / bitmap.height * 2,
-            bounds.right / bitmap.width * 2 - 1,
-            1 - bounds.bottom / bitmap.height * 2,
-            bounds.left / bitmap.width * 2 - 1,
-            1 - bounds.bottom / bitmap.height * 2
+        val uvBox = convertBoxToNDC(
+            bounds, bitmap.width, bitmap.height, cameraGLView.width, cameraGLView.height
         )
 
         if (name == "MOUTH") {
@@ -259,8 +275,8 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
         if (name == "FULL_FACE") {
             val skinColor = Color.rgb(230, 200, 170)
-            val shouldUpdate = lastFullFaceUVBox == null ||
-                    lastFullFaceUVBox!!.zip(uvBox).any { (a, b) -> kotlin.math.abs(a - b) > 0.01f }
+            val shouldUpdate = lastFullFaceUVBox == null || lastFullFaceUVBox!!.zip(uvBox)
+                .any { (a, b) -> kotlin.math.abs(a - b) > 0.01f }
             if (shouldUpdate) {
                 lastFullFaceUVBox = uvBox
                 val maskBitmap = createSkinMask(bounds, path, skinColor)
@@ -275,6 +291,30 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
             cameraGLView.updateRegionTexture(name, result, uvBox)
         }
     }
+
+    fun convertBoxToNDC(
+        bounds: RectF, imageW: Int, imageH: Int, surfaceW: Int, surfaceH: Int
+    ): FloatArray {
+        val scale = surfaceH.toFloat() / imageH
+        val scaledImageW = imageW * scale
+        val dx = (scaledImageW - surfaceW) / 2f
+
+        fun map(x: Float, y: Float): Pair<Float, Float> {
+            val sx = x * scale - dx
+            val sy = y * scale
+            val ndcX = sx / surfaceW * 2f - 1f
+            val ndcY = 1f - sy / surfaceH * 2f
+            return Pair(ndcX, ndcY)
+        }
+
+        val (x0, y0) = map(bounds.left, bounds.top)
+        val (x1, y1) = map(bounds.right, bounds.top)
+        val (x2, y2) = map(bounds.right, bounds.bottom)
+        val (x3, y3) = map(bounds.left, bounds.bottom)
+
+        return floatArrayOf(x0, y0, x1, y1, x2, y2, x3, y3)
+    }
+
 
     private var lastFullFaceBitmap: Bitmap? = null
     private var lastFullFaceUVBox: FloatArray? = null

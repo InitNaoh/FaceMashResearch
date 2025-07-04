@@ -113,8 +113,10 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         // Vẽ landmarks nếu cần
         synchronized(landmarkLock) {
             if (landmarks.isNotEmpty()) {
-                // GLUtils.drawLandmarks(landmarks)
-                // GLUtils.drawMouthFilled(landmarks)
+//                 GLUtils.drawLandmarks(landmarks)
+//                 GLUtils.drawMouthFilled(landmarks)
+            }
+            if ((isPlayGameTwo || isPlayGameThree) && hasAnyFaceTexture && landmarks.isNotEmpty()) {
                 textureIds["FULL_FACE"]?.let { texId ->
                     textureBoxes["FULL_FACE"]?.let { box ->
                         GLUtils.drawFaceMaskTexture(texId, box, 1.0f)
@@ -122,6 +124,8 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
                 }
             }
         }
+
+
 
         if (isPlayGameOne) gameOne()
 

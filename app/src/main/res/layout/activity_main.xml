@@ -10,7 +10,11 @@
     <com.infinity.facemashresearch.CameraGLView
         android:id="@+id/cameraGLView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintDimensionRatio="9:16"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0" />
 
     <Button
         android:id="@+id/btnStart"
