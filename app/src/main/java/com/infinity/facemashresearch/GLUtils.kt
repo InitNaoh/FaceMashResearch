@@ -444,6 +444,30 @@ object GLUtils {
         return result
     }
 
+    fun drawZoomedRegionFilled(points: List<Pair<Float, Float>>, scale: Float) {
+        if (points.size < 3) return
+
+        val centerX = points.map { it.first }.average().toFloat()
+        val centerY = points.map { it.second }.average().toFloat()
+
+        val scaled = points.map {
+            val dx = it.first - centerX
+            val dy = it.second - centerY
+            Pair(centerX + dx * scale, centerY + dy * scale)
+        }
+
+        val fb = createFloatBuffer(scaled.flatMap { listOf(it.first, it.second) }.toFloatArray())
+        GLES20.glUseProgram(landmarkProgram)
+        GLES20.glUniform4f(uColorLine, 1f, 0f, 0f, 0.5f)
+        GLES20.glEnableVertexAttribArray(aPosLine)
+        GLES20.glVertexAttribPointer(aPosLine, 2, GLES20.GL_FLOAT, false, 8, fb)
+
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN, 0, points.size)
+        GLES20.glDisable(GLES20.GL_BLEND)
+        GLES20.glDisableVertexAttribArray(aPosLine)
+    }
 
 
 }

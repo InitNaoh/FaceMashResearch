@@ -46,6 +46,8 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
     private lateinit var btnStart2: Button
 
+    private lateinit var btnStart3: Button
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -79,11 +81,17 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
         btnStart2 = findViewById<Button>(R.id.btnStart2)
         btnStart2.setOnClickListener {
-            cameraGLView.startEyebrowFall()
+            cameraGLView.startGameTwo()
+        }
+
+        btnStart3 = findViewById<Button>(R.id.btnStart3)
+        btnStart3.setOnClickListener {
+            cameraGLView.startGameThree(4000L)
         }
 
         cameraGLView.setOnClickListener {
-            cameraGLView.stopEyebrowFall()
+            cameraGLView.stopStepGameTwo()
+            cameraGLView.stopStepGameThree()
         }
     }
 

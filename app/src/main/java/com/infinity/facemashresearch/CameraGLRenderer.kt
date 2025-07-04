@@ -49,13 +49,40 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         "EYE_LEFT",
         "EYE_RIGHT",
         "NOSE",
-        "MOUTH_OUTSIDE"
+        "MOUTH"
     )
     private var currentRegionIndex = 0
     private var isRegionFalling = false
     private var regionOffsetYMap = mutableMapOf<String, Float>()
     private var regionStoppedMap = mutableMapOf<String, Boolean>()
     private var regionVisibleMap = mutableMapOf<String, Boolean>()
+
+    // Game three index
+    private var isPlayGameThree = false
+    private var isZoomingMouthTex = false
+    private var zoomTexStartTime = 0L
+    private var zoomTexDuration = 1000L
+    private var zoomTexScaleFrom = 0.5f
+    private var zoomTexScaleTo = 4.0f
+    private var zoomTexRepeatCount = 0
+    private var zoomTexMaxRepeats = 10
+    private var zoomTexLoop = false
+
+    private val currentZoomRegionName: String
+        get() = zoomRegionList.getOrNull(currentZoomRegionIndex) ?: "MOUTH_OUTSIDE"
+
+    private var lastZoomScale = 1.0f
+
+    private val zoomRegionList = listOf(
+        "EYE_BROW_LEFT",
+        "EYE_BROW_RIGHT",
+        "EYE_LEFT",
+        "EYE_RIGHT",
+        "NOSE",
+        "MOUTH"
+    )
+    private var currentZoomRegionIndex = 0
+    private val zoomFinalScaleMap = mutableMapOf<String, Float>()
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         oesTextureId = GLUtils.createOESTexture()
@@ -91,9 +118,55 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
             }
         }
 
+        if (isPlayGameOne) gameOne()
+
         if (hasAnyFaceTexture && isPlayGameTwo) gameTwo()
 
-        if (isPlayGameOne) gameOne()
+        if (hasAnyFaceTexture && isPlayGameThree) gameThree()
+    }
+
+    private fun gameThree() {
+        for ((region, scale) in zoomFinalScaleMap) {
+            val texId = textureIds[region] ?: continue
+            val uv = textureBoxes[region] ?: continue
+            GLUtils.drawMouthTexture(texId, uv, scaleFactor = scale)
+        }
+
+        if (isZoomingMouthTex) {
+            drawZoomMouthTexture()
+        }
+    }
+
+    fun drawZoomMouthTexture() {
+        val texId = textureIds[currentZoomRegionName] ?: return
+        val uv = textureBoxes[currentZoomRegionName] ?: return
+        if (uv.size < 8) return
+
+        val now = System.currentTimeMillis()
+        val elapsed = now - zoomTexStartTime
+        val t = (elapsed.toFloat() / zoomTexDuration).coerceIn(0f, 1f)
+
+        if (t >= 1f) {
+            zoomTexRepeatCount++
+            if (!zoomTexLoop && zoomTexRepeatCount >= zoomTexMaxRepeats) {
+                isZoomingMouthTex = false
+                return
+            }
+
+            // Đảo chiều zoom
+            val tmp = zoomTexScaleFrom
+            zoomTexScaleFrom = zoomTexScaleTo
+            zoomTexScaleTo = tmp
+            zoomTexStartTime = now
+            return
+        }
+
+        val scale = zoomTexScaleFrom + (zoomTexScaleTo - zoomTexScaleFrom) * t
+
+        // Vẽ texture với scale hiện tại
+        GLUtils.drawMouthTexture(texId, uv, scaleFactor = scale)
+
+        lastZoomScale = scale // luôn cập nhật scale mới nhất
     }
 
     fun gameOne() {
@@ -169,7 +242,7 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
                             regionVisibleMap[region] = false
                             isRegionFalling = false
                             currentRegionIndex++
-                            startRegionFall()
+                            startGameTwoRender()
                         }
                     }
                 }
@@ -194,7 +267,7 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         }
     }
 
-    fun startGameOneRender(texId: Int, uvBox: FloatArray, level: Float) {
+    fun startGameOne(texId: Int, uvBox: FloatArray, level: Float) {
         fallingRegionTexId = texId
         fallingRegionUVBox = uvBox.copyOf()
         fallingStartTime = System.currentTimeMillis()
@@ -202,6 +275,7 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         fallingRepeatCount = 0
         isPlayGameOne = true
         isPlayGameTwo = false
+        isPlayGameThree = false
     }
 
     fun updateLandmarks(points: List<Pair<Float, Float>>) {
@@ -230,25 +304,26 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         hasAnyFaceTexture = false
     }
 
-    fun startRegionFall() {
+    fun startGameTwoRender() {
         val region = regionsToFall.getOrNull(currentRegionIndex) ?: return
         isRegionFalling = true
         regionStoppedMap[region] = false
         regionVisibleMap[region] = true
         regionOffsetYMap[region] = 2.0f
-        isPlayGameTwo = true
         isPlayGameOne = false
+        isPlayGameTwo = true
+        isPlayGameThree = false
     }
 
-    fun stopCurrentRegionFall() {
+    fun stopStepGameTwo() {
         val region = regionsToFall.getOrNull(currentRegionIndex) ?: return
         regionStoppedMap[region] = true
         isRegionFalling = false
         currentRegionIndex++
-        startRegionFall()
+        startGameTwoRender()
     }
 
-    fun resetAllRegions() {
+    fun resetGameTwoIndex() {
         currentRegionIndex = 0
         isRegionFalling = false
         for (region in regionsToFall) {
@@ -258,4 +333,38 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         }
     }
 
+
+    fun startGameThree() {
+        zoomFinalScaleMap.clear()
+        currentZoomRegionIndex = 0
+        startZoomMouthTexture(loopForever = true)
+        isPlayGameOne = false
+        isPlayGameTwo = false
+        isPlayGameThree = true
+    }
+
+    fun startZoomMouthTexture(
+        durationMillis: Long = 1000L,
+        repeats: Int = 10,
+        loopForever: Boolean = false
+    ) {
+        isZoomingMouthTex = true
+        zoomTexStartTime = System.currentTimeMillis()
+        zoomTexDuration = durationMillis
+        zoomTexRepeatCount = 0
+        zoomTexMaxRepeats = repeats
+        zoomTexScaleFrom = 0.5f
+        zoomTexScaleTo = 2.5f
+        zoomTexLoop = loopForever
+    }
+
+    fun stopStepGameThree() {
+        isZoomingMouthTex = false
+        zoomFinalScaleMap[currentZoomRegionName] = lastZoomScale
+
+        currentZoomRegionIndex++
+        if (currentZoomRegionIndex < zoomRegionList.size) {
+            startZoomMouthTexture()
+        }
+    }
 }

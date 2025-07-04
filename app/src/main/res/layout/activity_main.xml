@@ -17,7 +17,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        android:text="Start Game 1"
+        android:text="Game 1"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/btnStart2"
         app:layout_constraintStart_toStartOf="parent" />
@@ -27,9 +27,19 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        android:text="Start Game 2"
+        android:text="Game 2"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnStart3"
+        app:layout_constraintStart_toEndOf="@id/btnStart" />
+
+    <Button
+        android:id="@+id/btnStart3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="Game 3"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/btnStart" />
+        app:layout_constraintStart_toEndOf="@id/btnStart2" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

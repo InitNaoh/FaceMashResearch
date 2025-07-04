@@ -1,7 +1,5 @@
 package com.infinity.facemashresearch
 
-import android.R.attr.bitmap
-import android.R.attr.level
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
@@ -37,20 +35,32 @@ class CameraGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
     fun startGameOne(bitmap: Bitmap, uvBox: FloatArray, level: Float) {
         queueEvent {
             val texId = GLUtils.loadTexture(bitmap)
-            renderer.startGameOneRender(texId, uvBox, level)
+            renderer.startGameOne(texId, uvBox, level)
         }
     }
 
-    fun startEyebrowFall() {
+    fun startGameTwo() {
         queueEvent {
-            renderer.resetAllRegions()
-            renderer.startRegionFall()
+            renderer.resetGameTwoIndex()
+            renderer.startGameTwoRender()
         }
     }
 
-    fun stopEyebrowFall() {
+    fun stopStepGameTwo() {
         queueEvent {
-            renderer.stopCurrentRegionFall()
+            renderer.stopStepGameTwo()
+        }
+    }
+
+    fun startGameThree(level: Long) {
+        queueEvent {
+            renderer.startGameThree()
+        }
+    }
+
+    fun stopStepGameThree() {
+        queueEvent {
+            renderer.stopStepGameThree()
         }
     }
 }
