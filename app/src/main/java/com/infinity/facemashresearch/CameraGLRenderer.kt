@@ -91,36 +91,12 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
             }
         }
 
-        if (hasAnyFaceTexture && isPlayGameTwo) {
-            for ((region, texId) in textureIds) {
-                val box = textureBoxes[region]
-                if (box != null && texId > 0 && regionVisibleMap[region] == true) {
-                    val uv = box.copyOf()
-                    val offsetY = regionOffsetYMap[region] ?: 0f
-                    for (i in 1 until uv.size step 2) {
-                        uv[i] += offsetY
-                    }
-                    GLUtils.drawMouthTexture(texId, uv, scaleFactor = 0.8f)
+        if (hasAnyFaceTexture && isPlayGameTwo) gameTwo()
 
-                    if (region == regionsToFall.getOrNull(currentRegionIndex)) {
-                        if (isRegionFalling && regionStoppedMap[region] == false) {
-                            regionOffsetYMap[region] = offsetY - 0.01f
-                            if (offsetY < -2f) {
-                                regionVisibleMap[region] = false
-                                isRegionFalling = false
-                                currentRegionIndex++
-                                startRegionFall()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (isPlayGameOne) gameLipOne()
+        if (isPlayGameOne) gameOne()
     }
 
-    fun gameLipOne() {
+    fun gameOne() {
         // Vẽ texture rơi xuống
         if (fallingRegionTexId > 0 && fallingRegionUVBox != null && fallingStartTime > 0 && fallingRepeatCount < fallingTotalRepeats) {
             val elapsed = (System.currentTimeMillis() - fallingStartTime) / 1000f
@@ -175,6 +151,32 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         }
     }
 
+    fun gameTwo() {
+        for ((region, texId) in textureIds) {
+            val box = textureBoxes[region]
+            if (box != null && texId > 0 && regionVisibleMap[region] == true) {
+                val uv = box.copyOf()
+                val offsetY = regionOffsetYMap[region] ?: 0f
+                for (i in 1 until uv.size step 2) {
+                    uv[i] += offsetY
+                }
+                GLUtils.drawMouthTexture(texId, uv, scaleFactor = 0.8f)
+
+                if (region == regionsToFall.getOrNull(currentRegionIndex)) {
+                    if (isRegionFalling && regionStoppedMap[region] == false) {
+                        regionOffsetYMap[region] = offsetY - 0.01f
+                        if (offsetY < -2f) {
+                            regionVisibleMap[region] = false
+                            isRegionFalling = false
+                            currentRegionIndex++
+                            startRegionFall()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fun getMouthInsideBounds(): RectF? {
         return try {
             val mouthPoints = GLUtils.MOUTH_INSIDE.mapNotNull { landmarks.getOrNull(it) }
@@ -191,7 +193,6 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
             null
         }
     }
-
 
     fun startGameOneRender(texId: Int, uvBox: FloatArray, level: Float) {
         fallingRegionTexId = texId
@@ -220,18 +221,6 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         hasAnyFaceTexture = true
     }
 
-    fun setMouthBitmap(bitmap: Bitmap, box: FloatArray) {
-//        if (mouthTextureId != -1) {
-//            val textures = IntArray(1)
-//            textures[0] = mouthTextureId
-//            GLES20.glDeleteTextures(1, textures, 0)
-//        }
-//
-//        mouthTextureId = GLUtils.loadTexture(bitmap)
-//        mouthBox = box
-//        hasFaceTexture = true
-    }
-
     fun clearTextures() {
         for (texId in textureIds.values) {
             GLES20.glDeleteTextures(1, intArrayOf(texId), 0)
@@ -240,7 +229,6 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         textureBoxes.clear()
         hasAnyFaceTexture = false
     }
-
 
     fun startRegionFall() {
         val region = regionsToFall.getOrNull(currentRegionIndex) ?: return

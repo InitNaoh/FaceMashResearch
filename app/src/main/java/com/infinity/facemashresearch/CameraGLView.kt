@@ -22,12 +22,6 @@ class CameraGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
 
     fun updateLandmarks(points: List<Pair<Float, Float>>) = renderer.updateLandmarks(points)
 
-    fun updateMouthTexture(bitmap: Bitmap, box: FloatArray) {
-        queueEvent {
-            renderer.setMouthBitmap(bitmap, box)
-        }
-    }
-
     fun updateRegionTexture(region: String, bitmap: Bitmap, box: FloatArray) {
         queueEvent {
             renderer.setRegionTexture(region, bitmap, box)
