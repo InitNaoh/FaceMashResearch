@@ -48,6 +48,8 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
     private lateinit var btnStart3: Button
 
+    private var gamePlay = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -64,7 +66,7 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
                 minFaceTrackingConfidence = 0.1f,
                 minFacePresenceConfidence = 0.1f,
                 maxNumFaces = 1,
-                currentDelegate = FaceLandmarkerHelper.DELEGATE_CPU,
+                currentDelegate = FaceLandmarkerHelper.DELEGATE_GPU,
                 faceLandmarkerHelperListener = this
             )
         }
@@ -81,17 +83,19 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
 
         btnStart2 = findViewById<Button>(R.id.btnStart2)
         btnStart2.setOnClickListener {
+            gamePlay = 2
             cameraGLView.startGameTwo()
         }
 
         btnStart3 = findViewById<Button>(R.id.btnStart3)
         btnStart3.setOnClickListener {
+            gamePlay = 3
             cameraGLView.startGameThree(4000L)
         }
 
         cameraGLView.setOnClickListener {
-            cameraGLView.stopStepGameTwo()
-            cameraGLView.stopStepGameThree()
+            if (gamePlay == 2) cameraGLView.stopStepGameTwo()
+            if (gamePlay == 3) cameraGLView.stopStepGameThree()
         }
     }
 
