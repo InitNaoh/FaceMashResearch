@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PointF
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
@@ -205,7 +206,12 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         val landmarkList = resultBundle.result.faceLandmarks()[0]
 
         handleRegion("MOUTH", GLUtils.MOUTH, landmarkList, bitmap)
-        handleRegion("MOUTH_OUTSIDE", GLUtils.MOUTH_OUTSIDE, landmarkList, bitmap)
+        if (gamePlay == 1) handleRegion(
+            "MOUTH_OUTSIDE",
+            GLUtils.MOUTH_OUTSIDE,
+            landmarkList,
+            bitmap
+        )
         handleRegion("EYE_LEFT", GLUtils.EYE_LEFT, landmarkList, bitmap)
         handleRegion("EYE_RIGHT", GLUtils.EYE_RIGHT, landmarkList, bitmap)
         handleRegion("NOSE", GLUtils.NOSE, landmarkList, bitmap)
@@ -225,12 +231,12 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
     private fun handleRegion(
         name: String, indices: List<Int>, landmarkList: List<NormalizedLandmark>, bitmap: Bitmap
     ) {
-        val path = Path()
         val points = indices.map {
             val x = landmarkList[it].x() * bitmap.width
             val y = landmarkList[it].y() * bitmap.height
-            android.graphics.PointF(x, y)
+            PointF(x, y)
         }
+        val path = createSmoothPath(points)
         path.moveTo(points[0].x, points[0].y)
         for (i in 1 until points.size) path.lineTo(points[i].x, points[i].y)
         path.close()
@@ -292,6 +298,33 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         }
     }
 
+    fun createSmoothPath(points: List<PointF>): Path {
+        val path = Path()
+        if (points.size < 2) return path
+
+        path.moveTo(points[0].x, points[0].y)
+
+        for (i in 1 until points.size - 2) {
+            val p0 = points[i - 1]
+            val p1 = points[i]
+            val p2 = points[i + 1]
+            val p3 = points[i + 2]
+
+            val cp1x = p1.x + (p2.x - p0.x) / 6f
+            val cp1y = p1.y + (p2.y - p0.y) / 6f
+            val cp2x = p2.x - (p3.x - p1.x) / 6f
+            val cp2y = p2.y - (p3.y - p1.y) / 6f
+
+            path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y)
+        }
+
+        // nối đoạn cuối
+        path.lineTo(points.last().x, points.last().y)
+        path.close()
+        return path
+    }
+
+
     fun convertBoxToNDC(
         bounds: RectF, imageW: Int, imageH: Int, surfaceW: Int, surfaceH: Int
     ): FloatArray {
@@ -315,10 +348,9 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         return floatArrayOf(x0, y0, x1, y1, x2, y2, x3, y3)
     }
 
-
     private var lastFullFaceBitmap: Bitmap? = null
-    private var lastFullFaceUVBox: FloatArray? = null
 
+    private var lastFullFaceUVBox: FloatArray? = null
 
     fun createSkinMask(bounds: RectF, path: Path, color: Int): Bitmap {
         val width = bounds.width().toInt().coerceAtLeast(1)
@@ -329,17 +361,14 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
             this.color = color
-            alpha = 255
+            alpha = 255 // mềm cạnh
         }
-
-        // Offset path để vẽ đúng vị trí
         val offsetPath = Path(path)
         offsetPath.offset(-bounds.left, -bounds.top)
-
-        // Vẽ nền màu da
         canvas.drawPath(offsetPath, paint)
 
         return bitmap
     }
+
 
 }

@@ -370,11 +370,14 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
 
     fun stopStepGameThree() {
         isZoomingMouthTex = false
-        zoomFinalScaleMap[currentZoomRegionName] = lastZoomScale
-
-        currentZoomRegionIndex++
+        Log.d(
+            "naoh_debug",
+            "currentZoomRegionIndex: $currentZoomRegionIndex, ${zoomRegionList.size}"
+        )
         if (currentZoomRegionIndex < zoomRegionList.size) {
+            zoomFinalScaleMap[currentZoomRegionName] = lastZoomScale
             startZoomMouthTexture()
-        }
+        } else isZoomingMouthTex = false
+        currentZoomRegionIndex++
     }
 }

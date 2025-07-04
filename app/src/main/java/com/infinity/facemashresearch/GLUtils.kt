@@ -136,6 +136,7 @@ object GLUtils {
         varying vec2 vTexCoord;
         void main() {
             gl_FragColor = texture2D(uTexture, vTexCoord);
+            gl_FragColor.a = smoothstep(0.0, 0.05, gl_FragColor.a);
         }
     """
 
@@ -171,7 +172,7 @@ object GLUtils {
         varying vec2 vTexCoord;
         void main() {
             vec4 color = texture2D(uTexture, vTexCoord);
-            if (color.a < 1.0) discard;
+            if (color.a < 0.5) discard;
             gl_FragColor = color;
         }
     """

@@ -12,6 +12,7 @@ class CameraGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         get() = renderer.surfaceTexture
 
     init {
+//        setEGLConfigChooser(AntiAliasedConfigChooser())
         setEGLContextClientVersion(2)
         renderer = CameraGLRenderer()
         setRenderer(renderer)
