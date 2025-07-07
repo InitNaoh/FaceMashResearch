@@ -29,6 +29,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import java.io.File
+import java.nio.file.Files
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -78,6 +80,9 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
                 mouthUVBox?.let { box ->
                     Log.d("naoh_debug", "onCreate: btnStart click")
                     cameraGLView.startGameOne(bmp, box, 4f)
+                    val output = File(filesDir, "${System.currentTimeMillis()}.mp4")
+                    if (output.exists().not()) output.createNewFile()
+                    cameraGLView.startRecording(output, cameraGLView.width, cameraGLView.height)
                 }
             }
         }
@@ -95,6 +100,7 @@ class MainActivity : AppCompatActivity(), FaceLandmarkerHelper.LandmarkerListene
         }
 
         cameraGLView.setOnClickListener {
+            cameraGLView.stopRecording()
             if (gamePlay == 2) cameraGLView.stopStepGameTwo()
             if (gamePlay == 3) cameraGLView.stopStepGameThree()
         }

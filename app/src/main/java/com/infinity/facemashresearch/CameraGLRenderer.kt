@@ -4,9 +4,11 @@ import android.R.attr.repeatCount
 import android.graphics.Bitmap
 import android.graphics.RectF
 import android.graphics.SurfaceTexture
+import android.opengl.EGL14
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.util.Log
+import java.io.File
 import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -103,8 +105,42 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         }
     }
 
+    var gameRecorder: GameRecorder? = null
+    var isRecording = false
+
     override fun onDrawFrame(gl: GL10?) {
+        val defaultDisplay = EGL14.eglGetCurrentDisplay()
+        val defaultDrawSurface = EGL14.eglGetCurrentSurface(EGL14.EGL_DRAW)
+        val defaultReadSurface = EGL14.eglGetCurrentSurface(EGL14.EGL_READ)
+        val defaultContext = EGL14.eglGetCurrentContext()
+
+        // 1. Update camera frame trong context mặc định
+        EGL14.eglMakeCurrent(defaultDisplay, defaultDrawSurface, defaultReadSurface, defaultContext)
         surfaceTexture?.updateTexImage()
+
+        // 2. Vẽ lên màn hình (GLSurfaceView)
+        renderScene(false)
+
+        // 3. Nếu đang ghi hình, chuyển sang context ghi video và vẽ lại
+        gameRecorder?.let {
+            it.makeCurrent()
+            GLUtils.initShaders() // thêm dòng này nếu cần thiết để re-bind shader trong context mới
+            renderScene(false)
+            it.swapBuffers()
+            it.feedEncoder()
+            EGL14.eglMakeCurrent(
+                defaultDisplay,
+                defaultDrawSurface,
+                defaultReadSurface,
+                defaultContext
+            )
+        }
+
+    }
+
+
+    private fun renderScene(isCamera: Boolean) {
+        if (isCamera) surfaceTexture?.updateTexImage()
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
         // Vẽ preview camera
@@ -132,7 +168,19 @@ class CameraGLRenderer : GLSurfaceView.Renderer {
         if (hasAnyFaceTexture && isPlayGameTwo) gameTwo()
 
         if (hasAnyFaceTexture && isPlayGameThree) gameThree()
+    }
 
+    fun startRecording(output: File, videoWidth: Int, videoHeight: Int) {
+        gameRecorder = GameRecorder(videoWidth, videoHeight) // hoặc lấy từ cameraGLView.width
+        gameRecorder?.start(output)
+        isRecording = true
+
+    }
+
+    fun stopRecording() {
+        gameRecorder?.stop()
+        gameRecorder = null
+        isRecording = false
     }
 
     private fun gameThree() {

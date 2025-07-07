@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
+import java.io.File
 
 class CameraGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceView(context, attrs) {
     private val renderer: CameraGLRenderer
@@ -64,4 +65,17 @@ class CameraGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
             renderer.stopStepGameThree()
         }
     }
+
+    fun startRecording(output: File, videoWidth: Int, videoHeight: Int) {
+        queueEvent {
+            renderer.startRecording(output, videoWidth, videoHeight)
+        }
+    }
+
+    fun stopRecording() {
+        queueEvent {
+            renderer.stopRecording()
+        }
+    }
+
 }
